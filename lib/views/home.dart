@@ -17,6 +17,8 @@ import 'package:enfome/util/constants.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:enfome/views/createPost.dart';
+import 'package:enfome/views/notification.dart';
+import 'package:enfome/views/subscriptions.dart';
 
 class Home extends StatefulWidget {
   static const String routeName = '/home';
@@ -28,8 +30,9 @@ class _HomeState extends State<Home> {
   int _selectedIndex = 0;
   Future fetchUser;
   final storage = FlutterSecureStorage();
+  bool isAdmin = false, mailVarified = true;
 
-  var newPost = CreatePost();
+  int notiNo = 0;
 
   var linearGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -52,6 +55,29 @@ class _HomeState extends State<Home> {
   //     print('$e');
   //   }
   // }
+  Future notiList() async {
+    String token = await storage.read(key: 'token');
+    // print('from future $token');
+    final response = await http.get(NetworkUtil.notiGroupUrl, headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json'
+    });
+    print('form method ${response.body}');
+    if (response.statusCode == 200) {
+      final String res = response.body;
+      // final String res = jsonEncode({
+      //   "notifications": ['kjdkdj', 'kjdkf'],
+      //   "total_unread": 7
+      // });
+      print('From feed $res');
+      var datafromjson = jsonDecode(res);
+      notiNo = datafromjson['total_unread'];
+
+      return null;
+    } else {
+      return null;
+    }
+  }
 
   Future<void> initPusher() async {
     try {
@@ -90,12 +116,24 @@ class _HomeState extends State<Home> {
     });
   }
 
+  chkToken() async {
+    String token = await storage.read(key: 'token');
+    if (storage == null) {
+      Constrants.pref.setBool('login', false);
+      Navigator.pushReplacementNamed(
+        context,
+        LoginPage.routeName,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    this.chkToken();
     this.userFetch();
     fetchUser = userFetch();
-    print('user $userFetch()');
+    notiList();
 
     initPusher();
   }
@@ -103,11 +141,24 @@ class _HomeState extends State<Home> {
   Future<UserModel> userFetch() async {
     String token = await storage.read(key: 'token');
     try {
-      final response = await http.get(NetworkUtil.userUrl,
-          headers: {'Authorization': 'Bearer $token'});
+      final response = await http.get(NetworkUtil.userUrl, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      });
       print('form method  ${response.statusCode} ${response.body}');
       if (response.statusCode == 200) {
         final String res = response.body;
+        var data = jsonDecode(res);
+        if (data['role'] == 'admin') {
+          setState(() {
+            isAdmin = true;
+          });
+        }
+        if (data["email_verified_at"] == null) {
+          setState(() {
+            mailVarified = false;
+          });
+        }
         print('$res');
         return userModelFromJson(res);
       } else {
@@ -118,13 +169,32 @@ class _HomeState extends State<Home> {
     }
   }
 
+  Widget _getIcon() {
+    if (notiNo == 0) {
+      return Icon(Icons.notifications_none_outlined);
+    } else {
+      return Icon(Icons.notifications_active_outlined);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 5,
         //centerTitle: true,
-        title: Image.asset('assets/Logo.png', fit: BoxFit.scaleDown),
+        title: Image.asset(
+          'assets/Logo.png',
+          fit: BoxFit.scaleDown,
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: _getIcon(),
+            onPressed: () {
+              Navigator.pushNamed(context, NotificationGrp.routeName);
+            },
+          ),
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: linearGradient,
@@ -133,13 +203,19 @@ class _HomeState extends State<Home> {
       ),
       body: _children[_selectedIndex],
       drawer: _drawer(),
-      floatingActionButton: _createPost(),
+      floatingActionButton: isAdmin
+          ? _createPost()
+          : Container(
+              height: 0,
+              width: 0,
+            ),
       bottomNavigationBar: _bottomBar(),
     );
   }
 
   Future logout() async {
-    final response = await http.get(NetworkUtil.logoutUrl);
+    final response = await http
+        .get(NetworkUtil.logoutUrl, headers: {'Accept': 'application/json'});
     print('form method ${response.body}');
     if (response.statusCode == 200) {
       // final String res = response.body;
@@ -150,9 +226,9 @@ class _HomeState extends State<Home> {
   Widget _createPost() {
     return FloatingActionButton(
       onPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) => newPost.newPostDialog(context),
+        Navigator.pushNamed(
+          context,
+          CreatePost.routeName,
         );
       },
       child: Icon(Icons.add),
@@ -221,10 +297,45 @@ class _HomeState extends State<Home> {
                   onTap: () {
                     logout();
                     Constrants.pref.setBool('login', false);
-                    storage.write(key: 'token', value: null);
+                    storage.delete(key: 'token');
                     Navigator.pushReplacementNamed(
                       context,
                       LoginPage.routeName,
+                    );
+                  },
+                ),
+                Divider(),
+                ListTile(
+                  title: Text(
+                    'Subscriptions',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  leading: Icon(Icons.subscriptions),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      Subscriptions.routeName,
+                    );
+                  },
+                ),
+                ListTile(
+                  title: Text(
+                    'Notification',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  leading: Icon(Icons.notifications_on),
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      Home.routeName,
                     );
                   },
                 ),
@@ -257,14 +368,13 @@ class _HomeState extends State<Home> {
                 ListTile(
                   leading: Icon(Icons.phone),
                   title: Text(
-                    "+8801319714385",
+                    "+8801313933388",
                     style: TextStyle(
                       color: Colors.black45,
-                      fontSize: 12.0,
                     ),
                   ),
                   onTap: () {
-                    launch('tel: +8801319714385');
+                    launch('tel: +8801313933388');
                   },
                 ),
                 ListTile(
@@ -273,7 +383,6 @@ class _HomeState extends State<Home> {
                     "enfomebd@gmail.com",
                     style: TextStyle(
                       color: Colors.black45,
-                      fontSize: 12.0,
                     ),
                   ),
                   onTap: () {
@@ -286,11 +395,10 @@ class _HomeState extends State<Home> {
                     "www.enfome.info",
                     style: TextStyle(
                       color: Colors.black45,
-                      fontSize: 12.0,
                     ),
                   ),
                   onTap: () {
-                    launch('http:www.enfome.info');
+                    launch('https://www.enfome.info');
                   },
                 ),
                 Row(
@@ -315,7 +423,7 @@ class _HomeState extends State<Home> {
                       color: Colors.cyan,
                       iconSize: 30.0,
                       onPressed: () {
-                        launch('https://www.tweeter.com/enf_me/');
+                        launch('https://www.twiter.com/enf_me/');
                       },
                     ),
                     IconButton(
@@ -333,7 +441,9 @@ class _HomeState extends State<Home> {
               ],
             );
           } else {
-            return CircularProgressIndicator();
+            return Center(
+              child: CircularProgressIndicator(),
+            );
           }
         },
       ),

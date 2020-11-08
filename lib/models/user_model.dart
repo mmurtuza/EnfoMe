@@ -20,6 +20,7 @@ class UserModel {
     this.apiToken,
     this.createdAt,
     this.updatedAt,
+    this.role,
   });
 
   int id;
@@ -32,6 +33,7 @@ class UserModel {
   String apiToken;
   DateTime createdAt;
   DateTime updatedAt;
+  String role;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json["id"],
@@ -44,6 +46,7 @@ class UserModel {
         apiToken: json["api_token"],
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
+        role: json["role"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -57,5 +60,6 @@ class UserModel {
         "api_token": apiToken,
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
+        "role": role,
       };
 }

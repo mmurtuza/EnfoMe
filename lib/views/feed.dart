@@ -21,8 +21,10 @@ class _FeedState extends State<Feed> {
   Future<FeedModel> getFeed() async {
     String token = await storage.read(key: 'token');
     // print('from future $token');
-    final response = await http
-        .get(NetworkUtil.feedUrl, headers: {'Authorization': 'Bearer $token'});
+    final response = await http.get(NetworkUtil.feedUrl, headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json'
+    });
     // print('form method ${response.body}');
     if (response.statusCode == 200) {
       final String res = response.body;
@@ -41,7 +43,13 @@ class _FeedState extends State<Feed> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return RefreshIndicator(
+      onRefresh: () {
+        setState(() {
+          fetchFeed = getFeed();
+        });
+        return fetchFeed;
+      },
       child: new FutureBuilder(
         future: fetchFeed,
         builder: (context, snapshot) {
@@ -52,10 +60,10 @@ class _FeedState extends State<Feed> {
                     elevation: 5,
                     child: InkWell(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => FeedView()),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(builder: (context) => FeedView()),
+                        // );
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),

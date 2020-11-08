@@ -156,7 +156,7 @@ class _MeetPageState extends State<MeetPage> {
           _joinMeeting();
         },
         child: Text(
-          'Join Meet',
+          'Join e-meet',
           style: TextStyle(
             fontSize: 25.0,
             fontWeight: FontWeight.w900,

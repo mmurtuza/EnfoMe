@@ -12,4 +12,7 @@ class NetworkUtil {
   static final instDetailstUrl = baseUrl + "/institute/details/";
   static final subsChkUrl = baseUrl + "/subscription/check/";
   static final updateSubsUrl = baseUrl + "/subscription/update/";
+  static final subsUrl = baseUrl + "/subscription/list/";
+  static final notiGroupUrl = baseUrl + "/notifications/grouped/get/";
+  static final notiDetailUrl = baseUrl + "/notifications/update/";
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:enfome/views/home.dart';
 import 'package:enfome/views/loginPage.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ import 'package:http/http.dart' as http;
 import 'dart:ui';
 import 'package:enfome/util/networkUtil.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:enfome/util/constants.dart';
 
 class SignUp extends StatefulWidget {
   static const String routeName = '/signUp';
@@ -21,6 +24,8 @@ class _SignUpState extends State<SignUp> {
   var _controller = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
+
+  bool _isLoading = false;
   int _radioValue = 0;
   bool _passVisible = true;
   bool _passVisible1 = true;
@@ -32,8 +37,23 @@ class _SignUpState extends State<SignUp> {
   List subDistList = List();
   List<String> sDistList, sSubDistList, sInstituteList = List();
   Map<String, dynamic> bodyOfPost1, bodyOfPost2, bodyOfPost3, bodyOfPost;
+  String msg = null;
+  bool hasMsg;
 
-  String inFName = null, inLName = null, inInsType = null, inSInst = null;
+  String inFName = null,
+      inLName = null,
+      inemail = null,
+      inphone = null,
+      inpass = null,
+      inrepass = null,
+      inregno = null,
+      ininstname = null,
+      ininsttype = null,
+      indist = null,
+      inuni = null,
+      insins = null,
+      intins = null,
+      instype = null;
 
   String firstName,
       lastName,
@@ -41,7 +61,7 @@ class _SignUpState extends State<SignUp> {
       cell,
       password,
       password_confirmation,
-      type,
+      type = 'institute',
       ins_reg_no,
       ins_name,
       dis_selection,
@@ -55,17 +75,24 @@ class _SignUpState extends State<SignUp> {
 
       switch (_radioValue) {
         case 0:
-          type = 'institute';
+          setState(() {
+            type = 'institute';
+          });
+
           typeSelector = 1;
 
           break;
         case 1:
-          type = 'student';
+          setState(() {
+            type = 'student';
+          });
           typeSelector = 2;
 
           break;
         case 2:
-          type = 'teacher';
+          setState(() {
+            type = 'teacher';
+          });
           typeSelector = 3;
           break;
       }
@@ -74,184 +101,212 @@ class _SignUpState extends State<SignUp> {
 
   Future<String> instList() async {
     String url = NetworkUtil.allInstListUrl;
-    print(url);
-    final response = await http.get(url);
-    print('inli ${response.statusCode}');
-    if (response.statusCode == 200) {
-      final String res = response.body;
-      var resBody = jsonDecode(res);
-      print(resBody);
-      setState(() {
-        instituteList = resBody['institutes'];
+    // print(url);
+    try {
+      final response =
+          await http.get(url, headers: {'Accept': 'application/json'});
+      print('inli ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final String res = response.body;
+        var resBody = jsonDecode(res);
+        print(resBody);
+        setState(() {
+          instituteList = resBody['institutes'];
 
-        List temp = instituteList.map((item) {
-          print("item $item");
-          return item['name'];
-        }).toList();
-        print("temp $temp");
+          // List temp = instituteList.map((item) {
+          //   print("item $item");
+          //   return item['name'];
+          // }).toList();
+          // print("temp $temp");
 
-        sInstituteList = List<String>.from(temp);
-        print(sInstituteList);
-      });
+          // sInstituteList = List<String>.from(temp);
+          // print(sInstituteList);
+        });
 
-      return 'instituteListModelFromJson(res)';
-    } else {
-      print('err');
-      return null;
+        return 'instituteListModelFromJson(res)';
+      } else {
+        print('err');
+        return '';
+      }
+    } catch (e) {
+      print(e);
     }
   }
 
   Future<String> districtList() async {
-    final response = await http.get(NetworkUtil.distUrl);
-    if (response.statusCode == 200) {
-      final String res = response.body;
-      var resBody = jsonDecode(res);
+    try {
+      final response = await http
+          .get(NetworkUtil.distUrl, headers: {'Accept': 'application/json'});
+      if (response.statusCode == 200) {
+        final String res = response.body;
+        var resBody = jsonDecode(res);
 
-      print('future' + resBody['districts'].toString() + 'future');
-      setState(() {
-        distList = resBody['districts'];
+        // print('future' + resBody['districts'].toString() + 'future');
+        setState(() {
+          distList = resBody['districts'];
 
-        List temp = distList.map((item) {
-          return item['bengali_name'];
-          // print("item $item");
-        }).toList();
-        // print("temp $temp");
+          List temp = distList.map((item) {
+            return item['bengali_name'];
+            // print("item $item");
+          }).toList();
+          // print("temp $temp");
 
-        sDistList = List<String>.from(temp);
-        // distId = '5';
-      });
-      return "su";
-    } else {
-      print('error');
-      return null;
+          sDistList = List<String>.from(temp);
+          // distId = '5';
+        });
+        return "su";
+      } else {
+        print('error');
+        return null;
+      }
+    } catch (e) {
+      print(e);
     }
   }
 
   Future<String> subDistrictList() async {
     String url =
         NetworkUtil.baseUrl + '/' + distId.toString() + '/sub_districts';
-    final response = await http.get(url);
-    print(response.statusCode);
-    if (response.statusCode == 200) {
-      final String res = response.body;
-      var resBody = jsonDecode(res);
+    try {
+      final response =
+          await http.get(url, headers: {'Accept': 'application/json'});
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        final String res = response.body;
+        var resBody = jsonDecode(res);
 
-      // print('future' + resBody['subdistricts'].toString() + 'future');
-      setState(() {
-        subDistList = resBody['subdistricts'];
-      });
-      return 'sub';
-    } else {
-      return null;
+        // print('future' + resBody['subdistricts'].toString() + 'future');
+        setState(() {
+          subDistList = resBody['subdistricts'];
+        });
+        return 'sub';
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print(e);
     }
   }
 
   Future<String> register(bodyOfPost) async {
-    final response = await http.post(NetworkUtil.regUrl, body: bodyOfPost);
+    print(bodyOfPost);
+    final form = _formKey.currentState;
+    try {
+      if (form.validate()) {
+        setState(() => _isLoading = true);
+        form.save();
+        final response2 = await http.post(NetworkUtil.regUrl,
+            body: bodyOfPost, headers: {'Accept': 'application/json'});
 
-    print('vorosh ${response.statusCode}');
-    print(response.body);
-    if (response.statusCode == 200) {
-      final String res = response.body;
-      Navigator.pushReplacementNamed(
-        context,
-        Home.routeName,
-      );
-      return 'S';
-    } else {
-      return null;
+        print(' ${response2.statusCode}');
+        print(' body ${response2.body} body');
+        // var res = jsonDecode(response.body);
+        if (response2.statusCode == 200) {
+          print('1');
+          final res2 = response2.body;
+          print('$res2');
+          var resBody = jsonDecode(res2);
+          print('2');
+
+          if (resBody == false) {
+            msg = 'msg'; //resBody['message'] + '!';
+            setState(() {
+              hasMsg = true;
+            });
+          }
+          print(resBody['access_token']);
+          print('3');
+          if (resBody['status'] == true) {
+            final storage = new FlutterSecureStorage();
+            print('4');
+            await storage.delete(key: 'token');
+            await storage.write(
+                key: 'token', value: resBody['access_token'].toString());
+            print('5');
+            Constrants.pref.setBool('login', true);
+            print('6');
+            // final String res = response.body;
+            Navigator.pushReplacementNamed(
+              context,
+              Home.routeName,
+            );
+          }
+          setState(() => _isLoading = false);
+          return '200';
+        } else if (response2.statusCode == 404) {
+          setState(() {
+            msg = 'Check your internet connection!';
+            _isLoading = false;
+          });
+          return '404';
+        } else if (response2.statusCode == 500) {
+          setState(() {
+            msg = 'Server error try again after some time!';
+            _isLoading = false;
+          });
+          return '500';
+        } else {
+          setState(() => _isLoading = false);
+          return 'nn';
+        }
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print(e);
     }
   }
 
-  // Future<RegModel> register(
-  //   firstName,
-  //   lastName,
-  //   email,
-  //   cell,
-  //   password,
-  //   password_confirmation,
-  //   type,
-  //   ins_reg_no,
-  //   ins_name,
-  //   dis_selection,
-  //   uni_selection,
-  //   stu_institute,
-  //   tea_institute,
-  // ) async {
-  //   final response = await http.post(NetworkUtil.regUrl, body: {
-  //     'firstName': firstName,
-  //     'lastName': lastName,
-  //     'email': email,
-  //     'cell': cell,
-  //     'password': password,
-  //     'password_confirmation': password_confirmation,
-  //     'type': type,
-  //     'ins_reg_no': ins_reg_no,
-  //     'ins_name': ins_name,
-  //     'dis_selection': dis_selection,
-  //     'uni_selection': uni_selection,
-  //     'stu_institute': stu_institute,
-  //     'tea_institute': tea_institute,
-  //   });
-
-  //   print('vorosh ${response.statusCode}');
-  //   print(response.body);
-  //   if (response.statusCode == 200) {
-  //     final String res = response.body;
-  //     Navigator.pushReplacementNamed(
-  //       context,
-  //       Home.routeName,
-  //     );
-  //     return regModelFromJson(res);
-  //   } else {
-  //     return null;
-  //   }
-  // }
-
   void _submit() async {
+    setState(() => _isLoading = true);
+    // one of the veriable will be pasd to the post methode
     bodyOfPost1 = {
-      'firstName': firstName,
-      'lastName': lastName,
-      'email': email,
-      'cell': cell,
-      'password': password,
-      'password_confirmation': password_confirmation,
+      'firstName': inFName,
+      'lastName': inLName,
+      'email': inemail,
+      'cell': inphone,
+      'password': inpass,
+      // 'password_confirmation': inrepass,
       'type': type,
-      'ins_reg_no': ins_reg_no,
-      'ins_name': ins_name,
+      'ins_reg_no': inregno,
+      'ins_name': ininstname,
+      'dis_selection': indist,
+      'uni_selection': inuni,
+      'ins_type': ininsttype,
     };
     bodyOfPost2 = {
-      'firstName': firstName,
-      'lastName': lastName,
-      'email': email,
-      'cell': cell,
-      'password': password,
-      'password_confirmation': password_confirmation,
-      'ins_name': ins_name,
-      'dis_selection': dis_selection,
-      'uni_selection': uni_selection,
-      'stu_institute': stu_institute,
+      'firstName': inFName,
+      'lastName': inLName,
+      'email': inemail,
+      'cell': inphone,
+      'password': inpass,
+      // 'password_confirmation': inrepass,
+      'stu_institute': insins,
+      'type': type,
     };
     bodyOfPost3 = {
-      'firstName': firstName,
-      'lastName': lastName,
-      'email': email,
-      'cell': cell,
-      'password': password,
-      'password_confirmation': password_confirmation,
-      'tea_institute': tea_institute,
+      'firstName': inFName,
+      'lastName': inLName,
+      'email': inemail,
+      'cell': inphone,
+      'password': inpass,
+      // 'password_confirmation': inrepass,
+      'tea_institute': intins,
+      'type': type,
     };
-    if (typeSelector == 0) {
+    //condition check
+    if (typeSelector == 1) {
       bodyOfPost = bodyOfPost1;
-    } else if (typeSelector == 1) {
-      bodyOfPost = bodyOfPost2;
     } else if (typeSelector == 2) {
+      bodyOfPost = bodyOfPost2;
+    } else if (typeSelector == 3) {
       bodyOfPost = bodyOfPost3;
     } else {
       print('error!');
     }
-    print(
-        "$firstName $lastName,$email,$cell,$password,$password_confirmation,$type, $ins_reg_no,$ins_name,$dis_selection,$uni_selection,$stu_institute,$tea_institute");
+    print("$bodyOfPost"); //For debuggin
+    //Methode call
     register(bodyOfPost);
   }
 
@@ -259,8 +314,7 @@ class _SignUpState extends State<SignUp> {
     if (_formKey.currentState.validate()) {
 //    If all data are correct then save data to out variables
       _formKey.currentState.save();
-      print(
-          "$firstName $lastName,$email,$cell,$password,$password_confirmation,$type, $ins_reg_no,$ins_name,$dis_selection,$uni_selection,$stu_institute,$tea_institute");
+      // print("$firstName $lastName,$email,$cell,$password,$password_confirmation,$type, $ins_reg_no,$ins_name,$dis_selection,$uni_selection,$stu_institute,$tea_institute");
     } else {
 //    If all data are not valid then start auto validation.
       setState(
@@ -272,8 +326,8 @@ class _SignUpState extends State<SignUp> {
   }
 
   String validateName(String value) {
-    if (value.length < 5)
-      return 'Name must be more than 6 charater';
+    if (value.length < 1)
+      return 'Name cannot be empty';
     else
       return null;
   }
@@ -296,7 +350,22 @@ class _SignUpState extends State<SignUp> {
   }
 
   String validatePass(String value) {
-    if (value != password) {
+    String pattern =
+        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
+    RegExp regExp = new RegExp(pattern);
+    if (value.length < 8) {
+      return 'Password must have 8 character.';
+    } else if (!regExp.hasMatch(value)) {
+      return 'Your password must have to contain at least an upper case, a lowercase, 1 number, and a special character!';
+    } else {
+      return null;
+    }
+  }
+
+  String validateConPass(String value) {
+    if (value.isEmpty) {
+      return 'Confirm password is required';
+    } else if (value != inpass) {
       return 'Password don\'t match';
     } else {
       return null;
@@ -326,7 +395,7 @@ class _SignUpState extends State<SignUp> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         centerTitle: true,
-        title: Image.asset('assets/Logo.png', fit: BoxFit.cover),
+        title: Image.asset('assets/images/Logo.png', fit: BoxFit.scaleDown),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: linearGradient,
@@ -335,10 +404,27 @@ class _SignUpState extends State<SignUp> {
       ),
       body: Center(
         child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 450.0,
+            minHeight: 700.0,
+          ),
           child: Form(
             key: _formKey,
             child: ListView(
               children: <Widget>[
+                msg == null
+                    ? Container(
+                        height: 0,
+                        width: 0,
+                      )
+                    : Container(
+                        child: Text(
+                          msg,
+                          style: TextStyle(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
                 _fNameField(),
                 _lNameField(),
                 _emailField(),
@@ -357,6 +443,16 @@ class _SignUpState extends State<SignUp> {
                 _studentInst(),
                 _teacherInst(),
                 _signUpBtn(),
+                _isLoading
+                    ? AlertDialog(
+                        content: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : Container(
+                        height: 0,
+                        width: 0,
+                      ),
                 SizedBox(
                   height: 20,
                 )
@@ -378,8 +474,8 @@ class _SignUpState extends State<SignUp> {
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
         ),
-        // validator: validateName,
-        onSaved: (value) => firstName = value,
+        validator: validateName,
+        onSaved: (value) => inFName = value,
         decoration: InputDecoration(
           hintText: 'Enter First Name',
           hintStyle: TextStyle(
@@ -402,8 +498,8 @@ class _SignUpState extends State<SignUp> {
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
         ),
-        // validator: validateName,
-        onSaved: (val) => lastName = val,
+        validator: validateName,
+        onSaved: (val) => inLName = val,
         decoration: InputDecoration(
           hintText: 'Enter Last Name',
           hintStyle: TextStyle(
@@ -421,6 +517,10 @@ class _SignUpState extends State<SignUp> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
       child: TextFormField(
+        initialValue: inemail,
+        onChanged: (value) {
+          inemail = value;
+        },
         keyboardType: TextInputType.emailAddress,
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
@@ -444,13 +544,17 @@ class _SignUpState extends State<SignUp> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
       child: TextFormField(
+        initialValue: inphone,
+        onChanged: (val) {
+          inphone = val;
+        },
         keyboardType: TextInputType.phone,
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
         ),
         onSaved: (val) => cell = val,
         validator: validateMobile,
-        controller: _controller,
+        // controller: _controller,
         // onChanged: validateMobile,
         decoration: InputDecoration(
           hintText: 'Enter Your Mobile Number',
@@ -473,12 +577,17 @@ class _SignUpState extends State<SignUp> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
       child: TextFormField(
-        controller: _controller,
+        validator: validatePass,
+        initialValue: inpass,
+        onChanged: (value) {
+          inpass = value;
+        },
+        // controller: _controller,
         obscureText: _passVisible,
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
         ),
-        onSaved: (val) => password = val,
+        onSaved: (val) => inpass = val,
         decoration: InputDecoration(
           hintText: 'Enter A New Password',
           suffixIcon: IconButton(
@@ -507,12 +616,16 @@ class _SignUpState extends State<SignUp> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
       child: TextFormField(
-        controller: _controller,
+        initialValue: inrepass,
+        onChanged: (value) {
+          inrepass = value;
+        },
+        // controller: _controller,
         obscureText: _passVisible1,
         style: TextStyle(
           color: Color.fromRGBO(125, 208, 230, 1),
         ),
-        //validator: validatePass,
+        validator: validateConPass,
         decoration: InputDecoration(
           hintText: 'Enter The Password Again',
           suffixIcon: IconButton(
@@ -545,7 +658,11 @@ class _SignUpState extends State<SignUp> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: TextFormField(
-          controller: _controller,
+          initialValue: inregno,
+          onChanged: (val) {
+            inregno = val;
+          },
+          // controller: _controller,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -574,7 +691,11 @@ class _SignUpState extends State<SignUp> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: TextFormField(
-          controller: _controller,
+          initialValue: ininstname,
+          onChanged: (value) {
+            ininstname = value;
+          },
+          // controller: _controller,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -603,6 +724,7 @@ class _SignUpState extends State<SignUp> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: DropdownButtonFormField(
+          value: ininsttype,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -617,8 +739,10 @@ class _SignUpState extends State<SignUp> {
             enabledBorder: _bord(),
             focusedBorder: _bord(),
           ),
-          onChanged: (String value) {},
-          items: ["School", "Collage", "School"]
+          onChanged: (String value) {
+            ininsttype = value;
+          },
+          items: ["School", "College", "University"]
               .map((label) => DropdownMenuItem(
                     child: Text(label),
                     value: label,
@@ -634,10 +758,11 @@ class _SignUpState extends State<SignUp> {
   }
 
   Widget _district() {
-    if (typeSelector == 2) {
+    if (typeSelector == 1) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: DropdownButtonFormField(
+          value: indist,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -653,6 +778,7 @@ class _SignUpState extends State<SignUp> {
             focusedBorder: _bord(),
           ),
           onChanged: (val) {
+            indist = val;
             setState(() {
               dis_selection = val;
               distId = int.parse(val);
@@ -675,10 +801,11 @@ class _SignUpState extends State<SignUp> {
   }
 
   Widget _union() {
-    if (typeSelector == 2) {
+    if (typeSelector == 1) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: DropdownButtonFormField(
+          value: inuni,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -693,15 +820,17 @@ class _SignUpState extends State<SignUp> {
             enabledBorder: _bord(),
             focusedBorder: _bord(),
           ),
-          onChanged: (String value) {
-            uni_selection = value;
-          },
           items: subDistList
               .map((label) => DropdownMenuItem(
                     child: Text(label['bengali_name']),
                     value: label['id'].toString(),
                   ))
               .toList(),
+
+          onChanged: (String value) {
+            inuni = value;
+            uni_selection = value;
+          },
         ),
       );
     } else {
@@ -716,6 +845,7 @@ class _SignUpState extends State<SignUp> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: DropdownButtonFormField(
+          value: intins,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -730,11 +860,13 @@ class _SignUpState extends State<SignUp> {
             enabledBorder: _bord(),
             focusedBorder: _bord(),
           ),
-          onChanged: (String value) {},
-          items: sInstituteList
+          onChanged: (String value) {
+            intins = value;
+          },
+          items: instituteList
               .map((label) => DropdownMenuItem(
-                    child: Text(label),
-                    value: label,
+                    child: Text(label['name']),
+                    value: label['id'].toString(),
                   ))
               .toList(),
         ),
@@ -751,6 +883,7 @@ class _SignUpState extends State<SignUp> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 0.0),
         child: DropdownButtonFormField(
+          value: insins,
           style: TextStyle(
             color: Color.fromRGBO(125, 208, 230, 1),
           ),
@@ -765,7 +898,9 @@ class _SignUpState extends State<SignUp> {
             enabledBorder: _bord(),
             focusedBorder: _bord(),
           ),
-          onChanged: (String value) {},
+          onChanged: (String value) {
+            insins = value;
+          },
           items: instituteList
               .map((label) => DropdownMenuItem(
                     child: Text(label['name']),
@@ -782,56 +917,68 @@ class _SignUpState extends State<SignUp> {
   }
 
   Widget _accType() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Radio(
-          value: 0,
-          activeColor: Color.fromRGBO(125, 208, 230, 1),
-          groupValue: _radioValue,
-          onChanged: (val) {
-            print("Radio $val");
-            _handleRadioValueChange(val);
-          },
+        Row(
+          children: [
+            Radio(
+              value: 0,
+              activeColor: Color.fromRGBO(125, 208, 230, 1),
+              groupValue: _radioValue,
+              onChanged: (val) {
+                // print("Radio $val");
+                _handleRadioValueChange(val);
+              },
+            ),
+            Text(
+              'Institute',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Color.fromRGBO(125, 208, 230, 1),
+              ),
+            ),
+          ],
         ),
-        Text(
-          'Institute',
-          style: TextStyle(
-            fontSize: 16.0,
-            color: Color.fromRGBO(125, 208, 230, 1),
-          ),
+        Row(
+          children: [
+            Radio(
+              value: 1,
+              activeColor: Color.fromRGBO(125, 208, 230, 1),
+              groupValue: _radioValue,
+              onChanged: (val) {
+                print("Radio $val");
+                _handleRadioValueChange(val);
+              },
+            ),
+            Text(
+              'Student',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Color.fromRGBO(125, 208, 230, 1),
+              ),
+            ),
+          ],
         ),
-        Radio(
-          value: 1,
-          activeColor: Color.fromRGBO(125, 208, 230, 1),
-          groupValue: _radioValue,
-          onChanged: (val) {
-            print("Radio $val");
-            _handleRadioValueChange(val);
-          },
-        ),
-        Text(
-          'Student/Staff',
-          style: TextStyle(
-            fontSize: 16.0,
-            color: Color.fromRGBO(125, 208, 230, 1),
-          ),
-        ),
-        Radio(
-          value: 2,
-          activeColor: Color.fromRGBO(125, 208, 230, 1),
-          groupValue: _radioValue,
-          onChanged: (val) {
-            print("Radio $val");
-            _handleRadioValueChange(val);
-          },
-        ),
-        Text(
-          'Teacher',
-          style: TextStyle(
-            fontSize: 16.0,
-            color: Color.fromRGBO(125, 208, 230, 1),
-          ),
+        Row(
+          children: [
+            Radio(
+              value: 2,
+              activeColor: Color.fromRGBO(125, 208, 230, 1),
+              groupValue: _radioValue,
+              onChanged: (val) {
+                print("Radio $val");
+                _handleRadioValueChange(val);
+              },
+            ),
+            Text(
+              'Teacher',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Color.fromRGBO(125, 208, 230, 1),
+              ),
+            ),
+          ],
         ),
       ],
     );

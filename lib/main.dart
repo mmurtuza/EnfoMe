@@ -2,6 +2,8 @@ import 'package:enfome/util/constants.dart';
 import 'package:enfome/views/home.dart';
 import 'package:enfome/views/loginPage.dart';
 import 'package:flutter/material.dart';
+
+import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:enfome/util/routes.dart';
@@ -46,8 +48,67 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
       ),
-      home: Constrants.pref.getBool('login') == true ? Home() : LoginPage(),
+      home: SplashScreen(),
       routes: routes,
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => new _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  startTime() async {
+    var _duration = new Duration(seconds: 2);
+    return new Timer(_duration, navigationPage);
+  }
+
+  void navigationPage() {
+    Navigator.of(context).pushReplacementNamed(
+      Constrants.pref.getBool('login') == true
+          ? Home.routeName
+          : LoginPage.routeName,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    startTime();
+  }
+
+  var linearGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color.fromRGBO(94, 204, 102, 1),
+      Color.fromRGBO(125, 208, 230, 1),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: linearGradient,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 0,
+            ),
+            Image.asset(
+              'assets/images/Logo.png',
+              width: 300,
+              fit: BoxFit.contain,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

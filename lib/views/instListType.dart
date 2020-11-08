@@ -22,15 +22,17 @@ class _InstituteListTypeState extends State<InstituteListType> {
   Future<InstituteListModel> fu;
   int instId;
   Future<InstDetailsModel> _instDetailvar;
-  bool chkSbs;
+  bool chkSbs = false;
 
   Future<InstituteListModel> instList() async {
     String token = await storage.read(key: 'token');
     String url = NetworkUtil.instListUrl + InstituteListType.typeofInst;
     print(url);
     try {
-      final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      });
       print('inli ${response.statusCode}');
       if (response.statusCode == 200) {
         final String res = response.body;
@@ -56,8 +58,10 @@ class _InstituteListTypeState extends State<InstituteListType> {
     String url = NetworkUtil.instDetailstUrl + instId.toString();
     print(url);
     try {
-      final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      });
       print('inli ${response.statusCode}');
       if (response.statusCode == 200) {
         final String res = response.body;
@@ -80,11 +84,13 @@ class _InstituteListTypeState extends State<InstituteListType> {
 
   Future<void> isSubs() async {
     String token = await storage.read(key: 'token');
-    String url = NetworkUtil.subsChkUrl + instId.toString();
+    String url = NetworkUtil.subsChkUrl; // + instId.toString();
     print(url);
     try {
-      final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      });
       print('inli ${response.statusCode}');
       if (response.statusCode == 200) {
         final String res = response.body;
@@ -110,11 +116,15 @@ class _InstituteListTypeState extends State<InstituteListType> {
 
   Future<void> udateSub() async {
     String token = await storage.read(key: 'token');
-    String url = NetworkUtil.updateSubsUrl + instId.toString();
+    String url = NetworkUtil.updateSubsUrl; // + instId.toString();
     print(url);
     try {
-      final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final response = await http.post(url, body: {
+        'Institute_id': instId.toString()
+      }, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      });
       print('inli ${response.statusCode}');
       if (response.statusCode == 200) {
         final String res = response.body;

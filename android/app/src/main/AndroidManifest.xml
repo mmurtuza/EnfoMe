@@ -9,7 +9,7 @@
     <application
         tools:replace="android:label" 
         android:name="io.flutter.app.FlutterApplication"
-        android:label="enfome"
+        android:label="EnfoMe"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
         
